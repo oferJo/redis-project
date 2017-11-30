@@ -11,6 +11,12 @@ server_addr = (server_ip, server_port)
 def log(text):
     print text
 
+class Client(object):
+    """
+
+    """
+    def __init__(self):
+        self = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 def user_input():
     inpt = input("What would you like to do? \nInsert (Set / Get / ShowAll / Exit)")
@@ -49,7 +55,7 @@ def send_receive(data):
 
 def main():
     # create a tcp socket (SOCK_STREAM) over ip protocol (AF_INET)
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client = Client
 
     # connect to the server
     log('Trying connecting to {}:{}'.format(*server_addr))
