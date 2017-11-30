@@ -12,19 +12,19 @@ def log(text):
     print text
 
 def user_input():
-    inpt = input("What would you like to do? \nInsert (Set / Get / ShowAll / Exit)")
-    if inpt == 'Set':
+    inpt = input("What would you like to do? \nInsert (set / get / showAll / exit)\n")
+    if inpt == 'set':
         key = input('Enter key:')
         value = input('Enter value:')
         record = {key: value}
         data = ('set', record)
-    if inpt == 'Get':
+    if inpt == 'set':
         key = input('Enter Key:')
         data = ('get', key)
-    if inpt == 'ShowAll':
+    if inpt == 'showAll':
         key = input('Enter Key:')
         data = ('showall', key)
-    if inpt == 'Exit':
+    if inpt == 'exit':
         data = False
     return data
 
@@ -48,7 +48,7 @@ def main():
     data = user_input()
     while data:
         json_encoded = json.dumps(data)
-        log('Send %s request' % inpt)
+        # log('Send %s request' % inpt)
         client.sendall(json_encoded)
         log("Waiting for reply from server")
         reply = client.recv(4096)
