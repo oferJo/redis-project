@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# pycharm
+.DS_Store
+.idea
+
 # Distribution / packaging
 .Python
 env/
