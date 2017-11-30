@@ -43,6 +43,7 @@ class TCPServer(object):
 
     def receive_json_commands(self, client):
         json_command = client.recv(4096)
+        print json_command
         command = json.loads(json_command)
         return command
 
