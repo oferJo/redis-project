@@ -13,7 +13,7 @@ def log(text):
 
 class Client(object):
     """
-
+    check
     """
     def __init__(self):
         self = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
