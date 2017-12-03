@@ -88,10 +88,7 @@ class TTL(object):
     def continuous_ttl_check(self):
         while True:
             self.check_entries()
-            time.sleep(1)
-            print("check")
-            print(self.timestamp)
-            print(database)
+            time.sleep(0.1)
 
 
 def delete_record(key):
