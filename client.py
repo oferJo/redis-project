@@ -2,67 +2,95 @@ import socket
 import json
 
 
-# Constants
-server_ip = '127.0.0.1'
-server_port = 3031
-server_addr = (server_ip, server_port)
+class Log(object):
+    # def __init__(self):
+    def local(self, text):
+        print text
 
-# The Client
-def log(text):
-    print text
+    def server_reply(self, reply):
+        if reply[0] == 'message':
+            print(reply[1])
+        if reply[0] == "data":
+            data_string = reply[1]
+            if not isinstance(reply[1], basestring):
+                data_string = ", ".join(reply[1])
 
-def user_input():
-    inpt = raw_input("What would you like to do? \nInsert (set / get / showAll / exit)\n")
-    data = ""
-    if inpt == 'set':
-        key = raw_input('Enter key:')
-        value = raw_input('Enter value:')
-        record = {key: value}
-        data = ('set', record)
-    if inpt == 'get':
-        key = raw_input('Enter Key:')
-        data = ('get', key)
-    if inpt == 'showAll':
-        key = raw_input('Enter Key:')
-        data = ('showall', key)
-    if inpt == 'exit':
-        data = False
-    return data
+            print(data_string)
+
+    def print_to_file(self):
+        print 'request to print to file, currently doing nothing'
 
 
-def process_server_feedback(reply):
-    if reply(0) == 'message':
-        log(reply[1])
-    if reply(0) == 'get' or 'showall':
-        log(reply[1])
+class Client(socket.socket):
+    """
+    Client class, inherit from socket
+    """
+    def __init__(self):
+        # create a tcp socket (SOCK_STREAM) over ip protocol (AF_INET)
+        super(Client, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
+        self.log = Log()
+
+    def connect(self):
+        server_ip = '127.0.0.1'
+        server_port = 3031
+        server_addr = (server_ip, server_port)
+        self.log.local('Trying connecting to {}:{}'.format(*server_addr))
+        super(Client, self).connect((server_ip, server_port))
+        super(Client, self).setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.log.local('Connected')
+
+    def send_data(self, data):
+        self.log.local('Sending data')
+        json_encoded = json.dumps(data)
+        super(Client, self).sendall(json_encoded)
+
+    def receive(self):
+        self.log.local("Waiting for reply from server")
+        reply = super(Client, self).recv(4096)
+        self.log.server_reply(json.loads(reply))
+
+    def close_connection(self):
+        self.log.local("Close connection")
+        super(Client, self).close()
+        self.log.local("Connection closed")
+
+
+class UserInput(object):
+    def __init__(self):
+       self.data = ('init','init')
+
+    def get_data(self):
+        inpt = raw_input("What would you like to do? \nInsert (set / get / showall / exit)\n")
+        if inpt == 'set':
+            key = raw_input('Enter key:')
+            value = raw_input('Enter value:')
+            record = {key: value}
+            self.data = ('set', record)
+        elif inpt == 'get':
+            key = raw_input('Enter Key:')
+            self.data = ('get', key)
+        elif inpt == 'showall':
+            key = raw_input('Enter Key:')
+            self.data = ('showall', key)
+        elif inpt == 'exit':
+            self.data = ('exit', -1)
+        else:
+            self.data = (inpt, -1)
+
+        return self.data
 
 
 def main():
-    # create a tcp socket (SOCK_STREAM) over ip protocol (AF_INET)
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    inp = UserInput()
+    client = Client()
+    client.connect()
+    while inp.get_data()[0] != 'exit':
+        client.send_data(inp.data)
+        client.receive()
 
-    # connect to the server
-    log('Trying connecting to {}:{}'.format(*server_addr))
-    client.connect(server_addr)
-    log('Connected!')
-
-    # start communicating with the server
-    data = user_input()
-    while data:
-        print data
-        json_encoded = json.dumps(data)
-        print json_encoded
-        # log('Send %s request' % inpt)
-        client.sendall(json_encoded)
-        log("Waiting for reply from server")
-        reply = client.recv(4096)
-        print reply
-        reply = json.loads(reply)
-        process_server_feedback(reply)
-        data = user_input()
-    log("Close connection")
-    client.close()
-    log("Connection closed")
+    client.send_data(inp.data)
+    client.receive()
+    client.close_connection()
 
 
 if __name__ == '__main__':

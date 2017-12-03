@@ -27,9 +27,10 @@ class TCPServer(object):
         self.server.close()
 
     def handle_client(self, client_socket, client_address):
-        # TODO implement after commands class is done
+        log("Waiting for command from client")
         command = self.receive_json_commands(client_socket)
-        while command[0] != "close":
+        log("Received raw command: {}".format(command))
+        while command[0] != "exit":
             log("Received command: {}".format(command[0]))
             reply = execute_command(command)
             self.send_json_reply(client_socket, reply)
@@ -43,9 +44,11 @@ class TCPServer(object):
 
     def receive_json_commands(self, client):
         json_command = client.recv(4096)
-        print json_command
-        command = json.loads(json_command)
-        return command
+        if json_command != "exit":
+            command = json.loads(json_command)
+            return command
+        else:
+            return json_command
 
     def send_json_reply(self, client, reply):
         json_reply = json.dumps(reply)
@@ -59,28 +62,43 @@ def log(text):
 def execute_command(command):
     if command[0] in COMMANDS:
         reply = COMMANDS[command[0]](command[1])
-        return reply
-    reply = ("message", "Unsupported command")
+    else:
+        reply = ("message", "Unsupported command")
+
     return reply
 
 
 def set_data(entry):
     database.update(entry)
-    reply = ("message", "Your data has been stored at key: {}".format(database.keys()))
+    reply = ("message", "Your data has been stored at key: {}".format(entry.keys()[0]))
     return reply
 COMMANDS["set"] = set_data
 
 
 def get_data(key):
-    reply = ("data", database[key])
+    if key in database:
+        reply = ("data", database[key])
+    else:
+        reply = ("message", 'No such key')
     return reply
 COMMANDS["get"] = get_data
 
 
-def close_connection():
+def close_connection(key):
     reply = ("close", "Your connection has been closed")
     return reply
-COMMANDS["close"] = close_connection
+COMMANDS["exit"] = close_connection
+
+
+def showall_data(partial_key):
+    values = []
+    for key, value in database.items():
+        if partial_key in key:
+            values.append(value)
+
+    reply = ("data", values)
+    return reply
+COMMANDS["showall"] = showall_data
 
 
 server = TCPServer('127.0.0.1', '0.0.0.0', 3031)
