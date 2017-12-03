@@ -1,5 +1,6 @@
 import json
 import socket
+import time
 
 
 database = {}
@@ -53,6 +54,22 @@ class TCPServer(object):
     def send_json_reply(self, client, reply):
         json_reply = json.dumps(reply)
         client.sendall(json_reply)
+
+
+class TTL(object):
+    def __init__(self):
+        self.timestamp = []
+        self.MaxTime = 2
+
+    def add_entry(self, key):
+        self.timestamp.append((time.time(), key))
+
+    def check_entries(self):
+        dif = time.time() - self.timestemp[-1][0]
+        while dif <= self.MaxTime:
+            del database[self.timestemp[-1][1]]
+            self.timestemp = self.timestep[:-1]
+            dif = time.time() - self.timestemp[-1][0]
 
 
 def log(text):
