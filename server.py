@@ -2,12 +2,12 @@ import json
 import socket
 import ruamel.yaml as yaml
 import warnings
+import time
+import threading
 
 warnings.simplefilter('ignore', yaml.error.UnsafeLoaderWarning)
 
-database = {}
 COMMANDS = {}
-# TODO: check if socket is universal or tcp specific
 
 class TCPServer(object):
     def __init__(self, my_ip, listening_ip, server_port):
@@ -58,6 +58,46 @@ class TCPServer(object):
         client.sendall(json_reply)
 
 
+class TTL(object):
+    global database
+
+    def __init__(self, configuration_time):
+        self.timestamp = []
+        self.MaxTime = configuration_time
+
+    def add_entry(self, key):
+        # checks and removes previous keys in case of over-writingg a record:
+        self.timestamp = [tup for tup in self.timestamp if tup[1] != key]
+        # insert the new key at the beginning of the list:
+        self.timestamp.insert(0, (time.time(), key))
+
+    def check_entries(self):
+        if self.timestamp:
+            dif = time.time() - self.timestamp[-1][0]
+        else:
+            return
+        while dif >= self.MaxTime:
+            print('Delete')
+            delete_record(self.timestamp[-1][1])
+            self.timestamp.pop()
+            if self.timestamp:
+                dif = time.time() - self.timestamp[-1][0]
+            else:
+                break
+
+    def continuous_ttl_check(self):
+        while True:
+            self.check_entries()
+            time.sleep(1)
+            print("check")
+            print(self.timestamp)
+            print(database)
+
+
+def delete_record(key):
+    del database[key]
+
+
 def log(text):
     print(text)
 
@@ -73,6 +113,7 @@ def execute_command(command):
 
 def set_data(entry):
     database.update(entry)
+    ts.add_entry(entry.keys()[0])
     reply = ("message", "Your data has been stored at key: {}".format(entry.keys()[0]))
     return reply
 COMMANDS["set"] = set_data
@@ -104,9 +145,25 @@ def showall_data(partial_key):
 COMMANDS["showall"] = showall_data
 
 
-config_dict = {}
-with open("config.yml", 'r') as config_file:
-    config_dict = yaml.load(config_file)
+def start_serv():
+    server = TCPServer('127.0.0.1', '0.0.0.0', config_dict["server_port"])
 
+
+def set_options():
+    with open("config.yml", 'r') as config_file:
+        config_dict = yaml.load(config_file)
+
+    return config_dict
+
+
+database = {}
+config_dict = set_options()
 configuration_time = config_dict["configuration_time"]
-server = TCPServer('127.0.0.1', '0.0.0.0', config_dict["server_port"])
+ts = TTL(configuration_time)
+
+cont_ttl = threading.Thread(target=ts.continuous_ttl_check)
+cont_ttl.setDaemon(True)
+cont_ttl.start()
+
+mythd = threading.Thread(target=start_serv)
+mythd.start()
