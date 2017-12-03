@@ -1,6 +1,9 @@
-import json
+import ruamel.yaml as yaml
+import warnings
 
-j = json.loads('["set", {"f": "g"}]')
+warnings.simplefilter('ignore', yaml.error.UnsafeLoaderWarning)
 
-print j
-print ["set", {"f": "g"}]
+with open("config.yml", 'r') as config_file:
+    config_dict = yaml.load(config_file)
+
+print config_dict["server_port"]

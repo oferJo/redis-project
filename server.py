@@ -1,6 +1,9 @@
 import json
 import socket
+import ruamel.yaml as yaml
+import warnings
 
+warnings.simplefilter('ignore', yaml.error.UnsafeLoaderWarning)
 
 database = {}
 COMMANDS = {}
@@ -101,4 +104,9 @@ def showall_data(partial_key):
 COMMANDS["showall"] = showall_data
 
 
-server = TCPServer('127.0.0.1', '0.0.0.0', 3031)
+config_dict = {}
+with open("config.yml", 'r') as config_file:
+    config_dict = yaml.load(config_file)
+
+configuration_time = config_dict["configuration_time"]
+server = TCPServer('127.0.0.1', '0.0.0.0', config_dict["server_port"])
